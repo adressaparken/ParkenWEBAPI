@@ -20,6 +20,7 @@ This API makes available data stored from multiple sensors (umidity, temperature
 
 4.Start Project - swagger project start OR npde app.js
 
+For more details about how sawgger and node js restfull api have a look at [This link](https://scotch.io/tutorials/speed-up-your-restful-api-development-in-node-js-with-swagger "RESTful API development in Node.js with Swagger")
 
 * Database configuration
 
