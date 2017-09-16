@@ -10,11 +10,11 @@ This API makes available data stored from multiple sensors (umidity, temperature
 ### How do I get set up? ###
 
 * Summary of set up
+1.Clone the repo - git clone git@bitbucket.org:parken_dev/parkenwebapi.git
+2.Open the command line we install swagger - npm install -g swagger
+3.Install application packages - npm install
+4.Start Project - swagger project start OR npde app.js
 
-#Clone the repo - git clone git@bitbucket.org:parken_dev/parkenwebapi.git
-#Open the command line we install swagger - npm install -g swagger
-#Install application packages - npm install
-#Start Project - swagger project start OR npde app.js
 * Database configuration
 In order to run the API a database config.js file needs to be created with the content bellow:
 ```
