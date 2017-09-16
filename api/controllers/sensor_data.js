@@ -10,6 +10,7 @@ module.exports = {
     sensorDataByDate: sensorDataByDate
 };
 
+//Database connection creation from the database config file
 var connection = mysql.createConnection({
     host: configSettings.mysql.host,
     user: configSettings.mysql.user,
@@ -40,18 +41,23 @@ function sensorData(req, res, next) {
     });
 }
 
+
+//Get a list of results with a paginantion (limit and offset) format
 function sensorDataList(req, res, next) {
 
     var query = '';
+    //Getting the API query request parameters
     var sensor = req.swagger.params.sensor.value;
     var limit = req.swagger.params.limit.value;
     var offset = req.swagger.params.offset.value;
 
+    //In case of limit not specified it returns 400 (Client error)
     if (limit !== 'undefined' && limit > 1000) {
         res.status(400).send();
         throw err;
     }
 
+    //Checking if the Sensor parameters esxists or not
     if (typeof sensor !== 'undefined') {
         query = 'SELECT sensor, timestamp as date, value FROM sensordata where sensor = "' + sensor + '" order by timestamp desc limit ' + limit + ' offset ' + offset + ';';
     } else {
@@ -61,6 +67,7 @@ function sensorDataList(req, res, next) {
     var sensorData = connection.query(query, function(err, result) {
 
         if (err) {
+            //Error with parameters values
             res.status(400).send();
             throw err;
         }
@@ -68,28 +75,35 @@ function sensorDataList(req, res, next) {
         if (result) {
             res.json(result);
         } else {
+            //no content error (no results returned)
             res.status(204).send();
         }
     });
 
+    //just for debug propouse
     if (sensorData)
         console.log(sensorData.sql);
 }
 
+//This API method returns results between to dates and groups them by an interval (YEAR,MONTH,WEEK,DAY,HOUR).
 function sensorDataByDate(req, res, next) {
 
     var query = '';
+    //Getting the API query request parameters
     var sensor = req.swagger.params.sensor.value;
     var start_date = req.swagger.params.start_date.value;
     var end_date = req.swagger.params.end_date.value;
     var interval = req.swagger.params.interval.value;
 
+    //Checking if the Sensor parameters esxists or not
     if (typeof sensor !== 'undefined') {
+        //Checking if the interval was specified
         if (interval !== 'undefined')
             query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor = "' + sensor + '" group by ' + interval + '(timestamp), sensor order by sensor desc;';
         else
             query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor = "' + sensor + '" order by timestamp desc;';
     } else {
+        //Checking if the interval was specified
         if (interval !== 'undefined')
             query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor <> "BAT" and sensor <> "TIME" and sensor <> "ACC" and sensor <> "STR" group by ' + interval + '(timestamp), sensor order by sensor desc;';
         else
@@ -99,6 +113,7 @@ function sensorDataByDate(req, res, next) {
     var sensorData = connection.query(query, function(err, result) {
 
         if (err) {
+            //Error with parameters values
             res.status(400).send();
             throw err;
         }
@@ -106,10 +121,12 @@ function sensorDataByDate(req, res, next) {
         if (result) {
             res.json(result);
         } else {
+            //no content error (no results returned)
             res.status(204).send();
         }
     });
 
     if (sensorData)
+    //just for debug propouse
         console.log(sensorData.sql);
 }
