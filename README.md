@@ -6,7 +6,7 @@ Parken API
 
 * Quick summary
 
-This API makes available data stored from multiple sensors (umidity, temperature, CO2, etc...) installed in a Park. 
+This API makes available data stored from multiple sensors (humidity, temperature, CO2, etc...) installed in a Park. 
 
 ### How do I get set up? ###
 
