@@ -19,13 +19,8 @@ var connection = mysql.createConnection({
 });
 connection.connect();
 
-
-//GET /sensorData/{id} operationId
-function sensorData(req, res, next) {
-
-    var id = req.swagger.params.id.value; //req.swagger contains the path parameters
-
-    var sensorData = connection.query('select id, id_wasp, sensor, value, timestamp from sensordata where id = ?', id, function(err, result) {
+function respond(res, query, params) {
+    var sensorData = connection.query(query, params, function(err, result) {
 
         if (err) {
             res.status(400).send();
@@ -41,11 +36,16 @@ function sensorData(req, res, next) {
     });
 }
 
+//GET /sensorData/{id} operationId
+function sensorData(req, res, next) {
+    var id = req.swagger.params.id.value; //req.swagger contains the path parameters
+
+    respond(res, 'select id, id_wasp, sensor, value, timestamp from sensordata where id = ?', id);
+}
+
 
 //Get a list of results with a paginantion (limit and offset) format
 function sensorDataList(req, res, next) {
-
-    var query = '';
     //Getting the API query request parameters
     var sensor = req.swagger.params.sensor.value;
     var limit = req.swagger.params.limit.value;
@@ -59,74 +59,38 @@ function sensorDataList(req, res, next) {
 
     //Checking if the Sensor parameters esxists or not
     if (typeof sensor !== 'undefined') {
-        query = 'SELECT sensor, timestamp as date, value FROM sensordata where sensor = "' + sensor + '" order by timestamp desc limit ' + limit + ' offset ' + offset + ';';
+        respond(res, 'SELECT sensor, timestamp as date, value FROM sensordata where sensor = ? order by timestamp desc limit ? offset ? ;', [sensor, limit, offset]);
     } else {
-        query = 'SELECT sensor, timestamp as date, value FROM sensordata where sensor <> "BAT" and sensor <> "TIME" order by timestamp desc limit ' + limit + ' offset ' + offset + ';';
+        respond(res, 'SELECT sensor, timestamp as date, value FROM sensordata where sensor <> "BAT" and sensor <> "TIME" order by timestamp desc limit ? offset ? ;', [limit, offset]);
     }
-
-    var sensorData = connection.query(query, function(err, result) {
-
-        if (err) {
-            //Error with parameters values
-            res.status(400).send();
-            throw err;
-        }
-
-        if (result) {
-            res.json(result);
-        } else {
-            //no content error (no results returned)
-            res.status(204).send();
-        }
-    });
-
-    //just for debug propouse
-    if (sensorData)
-        console.log(sensorData.sql);
 }
 
 //This API method returns results between to dates and groups them by an interval (YEAR,MONTH,WEEK,DAY,HOUR).
 function sensorDataByDate(req, res, next) {
-
-    var query = '';
     //Getting the API query request parameters
     var sensor = req.swagger.params.sensor.value;
     var start_date = req.swagger.params.start_date.value;
     var end_date = req.swagger.params.end_date.value;
     var interval = req.swagger.params.interval.value;
+    
+    if (!["YEAR","MONTH","WEEK","DAY","HOUR"].includes(interval)) {
+        res.status(400).send();
+        throw err;
+    }
 
     //Checking if the Sensor parameters esxists or not
     if (typeof sensor !== 'undefined') {
         //Checking if the interval was specified
-        if (interval !== 'undefined')
-            query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor = "' + sensor + '" group by ' + interval + '(timestamp), sensor order by sensor desc;';
+        if (interval !== 'undefined') //TODO DAY, MONTH YEAR ETC
+            respond(res, 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN ? and ?) AND sensor = ? group by +'+interval+'+(timestamp), sensor order by sensor desc;', [start_date, end_date, sensor, interval]);
         else
-            query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor = "' + sensor + '" order by timestamp desc;';
+            respond(res, 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN ? and ?) AND sensor = ? order by timestamp desc;', [start_date, end_date, sensor]);
+
     } else {
         //Checking if the interval was specified
         if (interval !== 'undefined')
-            query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor <> "BAT" and sensor <> "TIME" and sensor <> "ACC" and sensor <> "STR" group by ' + interval + '(timestamp), sensor order by sensor desc;';
+            respond(res, 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN ? and ?) AND sensor <> "BAT" and sensor <> "TIME" and sensor <> "ACC" and sensor <> "STR" group by '+interval+'(timestamp), sensor order by sensor desc;', [start_date, end_date, interval]);
         else
-            query = 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN "' + start_date + '" and "' + end_date + '") AND sensor <> "BAT" and sensor <> "TIME" and sensor <> "ACC" and sensor <> "STR" order by timestamp desc;';
+            respond(res, 'SELECT sensor, date(timestamp) as date, value FROM sensordata where (timestamp BETWEEN ? and ?) AND sensor <> "BAT" and sensor <> "TIME" and sensor <> "ACC" and sensor <> "STR" order by timestamp desc;', [start_date, end_date]);
     }
-
-    var sensorData = connection.query(query, function(err, result) {
-
-        if (err) {
-            //Error with parameters values
-            res.status(400).send();
-            throw err;
-        }
-
-        if (result) {
-            res.json(result);
-        } else {
-            //no content error (no results returned)
-            res.status(204).send();
-        }
-    });
-
-    if (sensorData)
-    //just for debug propouse
-        console.log(sensorData.sql);
 }
